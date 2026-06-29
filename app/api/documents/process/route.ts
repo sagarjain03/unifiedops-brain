@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
         chunk_index: chunk.chunk_index,
         content: chunk.content,
         page_number: chunk.page_number,
-        embedding: JSON.stringify(embedding),
+        embedding: embedding,
       })
     }
 
