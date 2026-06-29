@@ -3,6 +3,7 @@
 import { useCallback, useState, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Upload, FileText, Loader2, CheckCircle, XCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
@@ -20,6 +21,7 @@ interface Document {
   doc_type: string
   created_at: string
   status: string
+  chunk_count?: number
 }
 
 export default function DocumentsPage() {
@@ -30,6 +32,28 @@ export default function DocumentsPage() {
     const res = await fetch('/api/documents/list')
     const data = await res.json()
     if (data.documents) setDocuments(data.documents)
+  }
+
+  const processDocument = async (documentId: string) => {
+    // Optimistically show processing state
+    setDocuments(prev =>
+      prev.map(d => d.id === documentId ? { ...d, status: 'processing' } : d)
+    )
+
+    const res = await fetch('/api/documents/process', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ document_id: documentId }),
+    })
+
+    const data = await res.json()
+
+    if (res.ok) {
+      fetchDocuments()
+    } else {
+      alert('Processing failed: ' + data.error)
+      fetchDocuments()
+    }
   }
 
   useEffect(() => {
@@ -70,7 +94,7 @@ export default function DocumentsPage() {
             )
           )
         }
-      } catch (err) {
+      } catch {
         setFiles(prev =>
           prev.map(f =>
             f.name === file.name
@@ -158,7 +182,30 @@ export default function DocumentsPage() {
                     </p>
                   </div>
                 </div>
-                <Badge variant="secondary" className="capitalize">{doc.doc_type}</Badge>
+
+                <div className="flex items-center gap-3">
+                  <Badge variant="secondary" className="capitalize">{doc.doc_type}</Badge>
+
+                  {doc.status === 'pending' && (
+                    <Button size="sm" onClick={() => processDocument(doc.id)}>
+                      Process
+                    </Button>
+                  )}
+                  {doc.status === 'processing' && (
+                    <Badge className="bg-yellow-100 text-yellow-700">
+                      <Loader2 size={12} className="animate-spin mr-1" />
+                      Processing...
+                    </Badge>
+                  )}
+                  {doc.status === 'indexed' && (
+                    <Badge className="bg-green-100 text-green-700">
+                      ✓ Indexed ({doc.chunk_count} chunks)
+                    </Badge>
+                  )}
+                  {doc.status === 'failed' && (
+                    <Badge variant="destructive">Failed</Badge>
+                  )}
+                </div>
               </Card>
             ))}
           </div>
