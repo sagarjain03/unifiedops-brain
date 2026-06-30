@@ -8,12 +8,14 @@ import {
   FileText,
   MessageSquare,
   ShieldCheck,
+  Search,
 } from 'lucide-react'
 
 const links = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/documents', label: 'Documents', icon: FileText },
   { href: '/dashboard/chat', label: 'AI Chat', icon: MessageSquare },
+  { href: '/dashboard/rca', label: 'RCA Analysis', icon: Search },
   { href: '/dashboard/compliance', label: 'Compliance', icon: ShieldCheck },
 ]
 
