@@ -31,31 +31,17 @@ export default function Sidebar() {
       initial={false}
       animate={{ width: collapsed ? COLLAPSED : EXPANDED }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="relative shrink-0 flex flex-col overflow-hidden"
+      className="relative shrink-0 flex flex-col overflow-hidden bg-[#08090b] border-r border-[#26282e]"
       style={{
-        minHeight:      '100vh',
-        background:     'hsl(0 0% 7%)',
-        borderRight:    '1px solid hsl(0 0% 14% / 0.9)',
-        backdropFilter: 'blur(12px)',
-        // Prevent text from wrapping during animation
-        whiteSpace:     'nowrap',
+        minHeight:  '100vh',
+        whiteSpace: 'nowrap',
       }}
     >
-      {/* Subtle right-edge divider glow */}
-      <div
-        className="pointer-events-none absolute inset-y-0 right-0 w-px"
-        style={{ background: 'linear-gradient(to bottom, transparent, hsl(0 0% 30% / 0.12) 50%, transparent)' }}
-        aria-hidden
-      />
-
       {/* ── Logo ────────────────────────────────────────────────────── */}
       <div className="flex items-center px-4 pt-7 pb-9 overflow-hidden">
         <Link href="/dashboard" className="block shrink-0">
           {/* Always render the icon-only mark */}
-          <div
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-white font-black text-sm shrink-0"
-            style={{ background: 'linear-gradient(135deg, hsl(215 10% 40%), hsl(270 52% 50%))' }}
-          >
+          <div className="flex h-8 w-8 items-center justify-center border border-[#26282e] bg-[#0c0d10] text-sm font-mono font-semibold text-[#ff6a1a] shrink-0">
             U
           </div>
         </Link>
@@ -70,17 +56,9 @@ export default function Sidebar() {
               transition={{ duration: 0.18 }}
               className="ml-3 overflow-hidden"
             >
-              <h1 className="text-base font-extrabold tracking-tight leading-none">
-                <span className="text-white">Unified</span>
-                <span
-                  style={{
-                    background: 'linear-gradient(135deg, hsl(215 10% 65%), hsl(270 52% 68%))',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text',
-                  }}
-                >Ops</span>
-                <span className="text-white"> Brain</span>
+              <h1 className="font-mono text-[11px] font-medium tracking-[0.14em] leading-none text-[#e8e9eb]">
+                UNIFIEDOPS
+                <span className="text-[#ff6a1a]"> BRAIN</span>
               </h1>
             </motion.div>
           )}
@@ -97,24 +75,19 @@ export default function Sidebar() {
               key={href}
               href={href}
               title={collapsed ? label : undefined}   // tooltip when collapsed
-              className="relative block rounded-xl"
+              className="relative block"
             >
-              {/* Sliding active pill */}
+              {/* Sliding active indicator */}
               {isActive && (
                 <motion.div
                   layoutId="sidebar-active-pill"
-                  className="absolute inset-0 rounded-xl"
-                  style={{
-                    background: 'hsl(0 0% 100% / 0.06)',
-                    border:     '1px solid hsl(0 0% 100% / 0.1)',
-                    boxShadow:  '0 0 14px -6px hsl(0 0% 100% / 0.08)',
-                  }}
+                  className="absolute inset-0 border border-[#ff6a1a]/30 bg-[#ff6a1a]/[0.08]"
                   transition={{ type: 'spring', stiffness: 400, damping: 35 }}
                 />
               )}
 
               <motion.div
-                className="relative flex items-center gap-3 rounded-xl px-3 py-3"
+                className="relative flex items-center gap-3 px-3 py-3"
                 whileHover={{ x: isActive ? 0 : 2 }}
                 transition={{ duration: 0.12 }}
                 // Center icons when collapsed
@@ -124,7 +97,7 @@ export default function Sidebar() {
                   whileHover={{ scale: 1.15 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                   className="shrink-0"
-                  style={{ color: isActive ? 'hsl(0 0% 90%)' : 'hsl(0 0% 48%)' }}
+                  style={{ color: isActive ? '#ff6a1a' : '#7a7f8a' }}
                 >
                   <Icon size={17} />
                 </motion.span>
@@ -137,10 +110,10 @@ export default function Sidebar() {
                       animate={{ opacity: 1, width: 'auto' }}
                       exit={{ opacity: 0, width: 0 }}
                       transition={{ duration: 0.18 }}
-                      className="text-sm font-medium overflow-hidden"
-                      style={{ color: isActive ? 'hsl(0 0% 96%)' : 'hsl(0 0% 48%)' }}
+                      className="overflow-hidden font-mono text-[11px] tracking-[0.08em]"
+                      style={{ color: isActive ? '#e8e9eb' : '#7a7f8a' }}
                     >
-                      {label}
+                      {label.toUpperCase()}
                     </motion.span>
                   )}
                 </AnimatePresence>

@@ -29,34 +29,38 @@ export default async function DashboardPage() {
   const { count: complianceCount } = await supabaseAdmin.from('compliance_reports')  .select('*', { count: 'exact', head: true })
   const { count: userCount }       = await supabaseAdmin.from('users')               .select('*', { count: 'exact', head: true })
 
+  // All accents now route through the single industrial-orange signal color.
+  // Kept as separate entries (not collapsed into one constant) so DashboardShell
+  // can still distinguish cards if it ever needs to, but every accent/glow
+  // pair now resolves to the same theme color instead of blue/green/purple.
   const stats = [
     {
       label:   'Documents',
       value:   docCount ?? 0,
       iconKey: 'file-text' as const,
-      accent:  'hsl(217 91% 60%)',
-      glow:    'rgba(59, 130, 246, 0.4)',
+      accent:  '#ff6a1a',
+      glow:    'rgba(255, 106, 26, 0.35)',
     },
     {
       label:   'Chat Sessions',
       value:   chatCount ?? 0,
       iconKey: 'message-square' as const,
-      accent:  'hsl(142 70% 50%)',
-      glow:    'rgba(34, 197, 94, 0.4)',
+      accent:  '#ff6a1a',
+      glow:    'rgba(255, 106, 26, 0.35)',
     },
     {
       label:   'Compliance Reports',
       value:   complianceCount ?? 0,
       iconKey: 'shield-check' as const,
-      accent:  'hsl(25 95% 60%)',
-      glow:    'rgba(249, 115, 22, 0.4)',
+      accent:  '#ff6a1a',
+      glow:    'rgba(255, 106, 26, 0.35)',
     },
     {
       label:   'Users',
       value:   userCount ?? 0,
       iconKey: 'users' as const,
-      accent:  'hsl(270 70% 65%)',
-      glow:    'rgba(168, 85, 247, 0.4)',
+      accent:  '#ff6a1a',
+      glow:    'rgba(255, 106, 26, 0.35)',
     },
   ]
 

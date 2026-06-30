@@ -20,28 +20,17 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const { toggle } = useSidebar()
 
   return (
-    <div className="flex min-h-screen" style={{ background: 'hsl(0 0% 4%)' }}>
+    <div className="flex min-h-screen bg-[#08090b]">
       <Sidebar />
 
       <div className="flex flex-1 flex-col min-w-0">
-        {/* Glass header bar */}
-        <header
-          className="sticky top-0 z-30 flex h-14 items-center justify-between px-5"
-          style={{
-            background:           'hsl(0 0% 5% / 0.85)',
-            borderBottom:         '1px solid hsl(0 0% 16% / 0.7)',
-            backdropFilter:       'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-          }}
-        >
+        {/* Header bar */}
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[#26282e] bg-[#08090b]/90 px-5 backdrop-blur-sm">
           {/* Hamburger */}
           <button
             onClick={toggle}
             aria-label="Toggle sidebar"
-            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
-            style={{ color: 'hsl(0 0% 50%)' }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'hsl(0 0% 15%)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            className="flex h-8 w-8 items-center justify-center border border-transparent text-[#7a7f8a] transition-colors hover:border-[#26282e] hover:text-[#e8e9eb]"
           >
             <Menu size={18} />
           </button>

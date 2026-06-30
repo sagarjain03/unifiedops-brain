@@ -1,349 +1,315 @@
 'use client'
 
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import { useEffect, useRef, useState } from 'react'
+import { motion, useInView } from 'framer-motion'
 import { Show, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs'
-import {
-  MessageSquare,
-  ShieldCheck,
-  Search,
-  ArrowRight,
-  Zap,
-  Brain,
-} from 'lucide-react'
+import { ArrowRight, MessageSquare, ShieldCheck, Search } from 'lucide-react'
 
-// ─── Animation variants ───────────────────────────────────────────────────────
+// ── helpers ─────────────────────────────────────────────────────────────────
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 32 },
-  visible: (delay = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1], delay },
-  }),
+function useCountUp(target: number, inView: boolean, decimals = 0, duration = 1400) {
+  const [value, setValue] = useState(0)
+  useEffect(() => {
+    if (!inView) return
+    let raf: number
+    const start = performance.now()
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration)
+      const eased = 1 - Math.pow(1 - t, 3)
+      setValue(target * eased)
+      if (t < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [inView, target, duration])
+  return value.toFixed(decimals)
 }
 
-const fadeIn = {
-  hidden:  { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.6 } },
-}
+// ── readout strip (signature element) ──────────────────────────────────────
 
-// ─── Feature cards data ───────────────────────────────────────────────────────
+function Readout() {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, margin: '-80px' })
+  const docs = useCountUp(2840, inView)
+  const accuracy = useCountUp(99.2, inView, 1)
+  const uptime = useCountUp(100, inView)
 
-const features = [
-  {
-    icon:  MessageSquare,
-    title: 'AI Chat & Citations',
-    desc:  'Ask questions about your documents and get precise answers backed by inline citations — no hallucinations, always traceable.',
-    accent: 'hsl(217 91% 60%)',
-    glow:   'rgba(59,130,246,0.15)',
-  },
-  {
-    icon:  ShieldCheck,
-    title: 'Compliance Automation',
-    desc:  'Instantly check your operations against regulatory standards. Surface gaps before they become incidents.',
-    accent: 'hsl(142 70% 50%)',
-    glow:   'rgba(34,197,94,0.15)',
-  },
-  {
-    icon:  Search,
-    title: 'Root Cause Analysis',
-    desc:  'Feed failure reports into the AI and get structured RCA documents with probable causes and corrective actions in seconds.',
-    accent: 'hsl(270 70% 65%)',
-    glow:   'rgba(168,85,247,0.15)',
-  },
-]
-
-// ─── Gradient orb (purely CSS-animated, no canvas/JS) ────────────────────────
-
-function GradientOrbs() {
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-      {/* Primary blue orb — top-left */}
-      <div
-        className="absolute -top-40 -left-40 h-[600px] w-[600px] rounded-full opacity-25 blur-3xl"
-        style={{
-          background: 'radial-gradient(circle, hsl(217 91% 60%) 0%, transparent 70%)',
-          animation: 'orbFloat1 18s ease-in-out infinite',
-        }}
+    <div
+      ref={ref}
+      className="relative grid grid-cols-3 divide-x divide-[#26282e] border border-[#26282e] bg-[#0c0d10]"
+    >
+      {/* scanning hairline */}
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#ff6a1a] to-transparent"
+        initial={{ opacity: 0 }}
+        animate={inView ? { opacity: [0, 1, 0], top: ['0%', '100%'] } : {}}
+        transition={{ duration: 2.6, repeat: Infinity, repeatDelay: 1.4, ease: 'linear' }}
       />
-      {/* Purple orb — top-right */}
-      <div
-        className="absolute -top-20 right-0 h-[500px] w-[500px] rounded-full opacity-20 blur-3xl"
-        style={{
-          background: 'radial-gradient(circle, hsl(270 70% 65%) 0%, transparent 70%)',
-          animation: 'orbFloat2 22s ease-in-out infinite',
-        }}
-      />
-      {/* Orange orb — bottom-center */}
-      <div
-        className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[400px] w-[700px] rounded-full opacity-10 blur-3xl"
-        style={{
-          background: 'radial-gradient(ellipse, hsl(25 95% 60%) 0%, transparent 70%)',
-          animation: 'orbFloat3 26s ease-in-out infinite',
-        }}
-      />
-
-      {/* Keyframes injected inline — avoids a separate CSS file */}
-      <style>{`
-        @keyframes orbFloat1 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33%       { transform: translate(60px, 40px) scale(1.05); }
-          66%       { transform: translate(-30px, 70px) scale(0.95); }
-        }
-        @keyframes orbFloat2 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          40%       { transform: translate(-80px, 60px) scale(1.08); }
-          70%       { transform: translate(40px, -40px) scale(0.97); }
-        }
-        @keyframes orbFloat3 {
-          0%, 100% { transform: translateX(-50%) scale(1); }
-          50%       { transform: translateX(-50%) scale(1.12) translateY(-30px); }
-        }
-      `}</style>
+      {[
+        { label: 'DOCS INDEXED', value: docs, suffix: '' },
+        { label: 'CITATION ACCURACY', value: accuracy, suffix: '%' },
+        { label: 'OCR + RAG UPTIME', value: uptime, suffix: '%' },
+      ].map((m) => (
+        <div key={m.label} className="px-6 py-5 sm:px-8 sm:py-6">
+          <div className="font-mono text-[10px] tracking-[0.18em] text-[#7a7f8a]">{m.label}</div>
+          <div className="mt-1.5 font-mono text-2xl text-[#e8e9eb] sm:text-3xl">
+            {m.value}
+            <span className="text-[#7a7f8a]">{m.suffix}</span>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
 
-// ─── Hero section ─────────────────────────────────────────────────────────────
+// ── animated log line, used in hero side panel ─────────────────────────────
+
+const LOG_LINES = [
+  { tag: 'QUERY', text: 'What caused Pump P-204 failure on 14 Jul?' },
+  { tag: 'TRACE', text: 'Scanning 3 sources \u2014 maintenance_log_204.pdf, sop_pumps.pdf' },
+  { tag: 'ANSWER', text: 'Outboard seal failure from monsoon silt ingress.' },
+  { tag: 'CITE', text: 'maintenance_log_204.pdf \u00b7 p.4 \u00b7 94% match' },
+]
+
+function HeroLog() {
+  const [shown, setShown] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => {
+      setShown((s) => (s + 1) % (LOG_LINES.length + 1))
+    }, 1500)
+    return () => clearInterval(id)
+  }, [])
+
+  return (
+    <div className="border border-[#26282e] bg-[#0c0d10] p-5 font-mono text-[12.5px] leading-relaxed sm:p-6">
+      <div className="mb-3 flex items-center gap-2 text-[#7a7f8a]">
+        <span className="h-1.5 w-1.5 rounded-full bg-[#ff6a1a]" />
+        live trace
+      </div>
+      <div className="flex flex-col gap-2.5">
+        {LOG_LINES.map((l, i) => (
+          <motion.div
+            key={l.tag}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: i < shown ? 1 : 0 }}
+            transition={{ duration: 0.35 }}
+            className="flex gap-3"
+          >
+            <span
+              className="w-14 shrink-0 text-[10px] tracking-wider"
+              style={{ color: l.tag === 'ANSWER' ? '#ff6a1a' : '#7a7f8a' }}
+            >
+              {l.tag}
+            </span>
+            <span className={l.tag === 'ANSWER' ? 'text-[#e8e9eb]' : 'text-[#a9adb6]'}>
+              {l.text}
+            </span>
+          </motion.div>
+        ))}
+        <motion.span
+          animate={{ opacity: [1, 0] }}
+          transition={{ duration: 0.6, repeat: Infinity, repeatType: 'reverse' }}
+          className="ml-14 h-3.5 w-1.5 bg-[#ff6a1a]"
+        />
+      </div>
+    </div>
+  )
+}
+
+// ── hero ─────────────────────────────────────────────────────────────────────
 
 function Hero() {
   return (
-    <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 text-center">
-      <GradientOrbs />
-
-      {/* Top badge */}
-      <motion.div
-        variants={fadeUp}
-        initial="hidden"
-        animate="visible"
-        custom={0}
-        className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-[hsl(215_16%_65%)] backdrop-blur-sm"
-      >
-        <Zap className="h-3.5 w-3.5 text-[hsl(217_91%_60%)]" />
-        AI-Powered Industrial Intelligence
-      </motion.div>
-
-      {/* Headline */}
-      <motion.h1
-        variants={fadeUp}
-        initial="hidden"
-        animate="visible"
-        custom={0.1}
-        className="max-w-3xl text-5xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl"
-      >
-        Unified
-        <span
-          className="inline-block"
-          style={{
-            background: 'linear-gradient(135deg, hsl(217 91% 60%), hsl(270 70% 65%) 60%, hsl(25 95% 60%))',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-          }}
-        >
-          Ops
-        </span>{' '}
-        Brain
-      </motion.h1>
-
-      {/* Subtitle */}
-      <motion.p
-        variants={fadeUp}
-        initial="hidden"
-        animate="visible"
-        custom={0.25}
-        className="mt-6 max-w-2xl text-lg leading-relaxed text-[hsl(215_16%_65%)]"
-      >
-        The AI knowledge platform built for industrial operations. Upload your PDFs, ask
-        questions, automate compliance checks, and generate root-cause analyses — all in
-        one place.
-      </motion.p>
-
-      {/* CTA buttons */}
-      <motion.div
-        variants={fadeUp}
-        initial="hidden"
-        animate="visible"
-        custom={0.4}
-        className="mt-10 flex flex-wrap items-center justify-center gap-4"
-      >
-        <Show when="signed-out">
-          {/* Get Started */}
-          <SignUpButton mode="redirect">
-            <button
-              className="group relative inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm font-semibold text-white transition-all duration-300"
-              style={{ background: 'linear-gradient(135deg, hsl(217 91% 55%), hsl(217 91% 45%))' }}
-              onMouseEnter={(e) => {
-                ;(e.currentTarget as HTMLElement).style.boxShadow = '0 0 30px -4px hsl(217 91% 60% / 0.6), 0 0 60px -8px hsl(217 91% 60% / 0.3)'
-                ;(e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'
-              }}
-              onMouseLeave={(e) => {
-                ;(e.currentTarget as HTMLElement).style.boxShadow = 'none'
-                ;(e.currentTarget as HTMLElement).style.transform = 'translateY(0)'
-              }}
-            >
-              Get Started
-              <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-            </button>
-          </SignUpButton>
-
-          {/* Sign In — glass style */}
-          <SignInButton mode="redirect">
-            <button className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:border-white/20 hover:bg-white/10">
-              Sign In
-            </button>
-          </SignInButton>
-        </Show>
-
-        <Show when="signed-in">
-          <Link
-            href="/dashboard"
-            className="group inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm font-semibold text-white transition-all duration-300"
-            style={{ background: 'linear-gradient(135deg, hsl(217 91% 55%), hsl(217 91% 45%))' }}
-            onMouseEnter={(e) => {
-              ;(e.currentTarget as HTMLElement).style.boxShadow = '0 0 30px -4px hsl(217 91% 60% / 0.6)'
-              ;(e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'
-            }}
-            onMouseLeave={(e) => {
-              ;(e.currentTarget as HTMLElement).style.boxShadow = 'none'
-              ;(e.currentTarget as HTMLElement).style.transform = 'translateY(0)'
-            }}
-          >
-            Go to Dashboard
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-          </Link>
-          <UserButton />
-        </Show>
-      </motion.div>
-
-      {/* Scroll hint */}
-      <motion.div
-        variants={fadeIn}
-        initial="hidden"
-        animate="visible"
-        className="absolute bottom-10 left-1/2 -translate-x-1/2"
-      >
-        <div className="flex flex-col items-center gap-1.5 text-xs text-white/30">
-          <span>Scroll to explore</span>
-          <div className="h-8 w-px bg-gradient-to-b from-white/30 to-transparent" />
-        </div>
-      </motion.div>
-    </section>
-  )
-}
-
-// ─── Feature card ─────────────────────────────────────────────────────────────
-
-function FeatureCard({
-  icon: Icon,
-  title,
-  desc,
-  accent,
-  glow,
-  index,
-}: {
-  icon: React.ElementType
-  title: string
-  desc: string
-  accent: string
-  glow: string
-  index: number
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: index * 0.12 }}
-      whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className="glass-panel relative flex flex-col gap-5 overflow-hidden rounded-2xl p-7 transition-shadow duration-300"
-      style={{ boxShadow: `0 0 0 0 ${glow}` }}
-      onMouseEnter={(e) => {
-        ;(e.currentTarget as HTMLElement).style.boxShadow = `0 0 40px -8px ${glow.replace('0.15', '0.5')}`
-      }}
-      onMouseLeave={(e) => {
-        ;(e.currentTarget as HTMLElement).style.boxShadow = `0 0 0 0 ${glow}`
-      }}
-    >
-      {/* Corner glow */}
+    <section className="relative border-b border-[#26282e] px-6 pb-16 pt-28 sm:px-10 sm:pt-36 lg:px-16">
       <div
-        className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full opacity-20 blur-2xl"
-        style={{ background: accent }}
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.05]"
+        style={{
+          backgroundImage:
+            'linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)',
+          backgroundSize: '64px 64px',
+        }}
       />
 
-      {/* Icon */}
-      <div
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-        style={{ background: `${glow.replace('0.15', '0.2')}`, border: `1px solid ${accent}30` }}
-      >
-        <Icon className="h-5 w-5" style={{ color: accent }} />
+      <div className="relative mx-auto grid max-w-6xl gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
+        <div>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="mb-7 inline-flex items-center gap-2 border border-[#26282e] px-3 py-1 font-mono text-[10px] tracking-[0.18em] text-[#7a7f8a]"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-[#ff6a1a]" />
+            SYS.STATUS &mdash; OPERATIONAL
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.08 }}
+            className="font-[var(--font-display)] text-[13vw] font-medium leading-[0.92] tracking-tight text-[#e8e9eb] sm:text-6xl lg:text-7xl"
+          >
+            Every manual.
+            <br />
+            Every log.
+            <br />
+            <span className="text-[#ff6a1a]">One brain.</span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="mt-7 max-w-md text-[15px] leading-relaxed text-[#a9adb6]"
+          >
+            UnifiedOps Brain reads your plant&apos;s SOPs, scanned logs, and compliance
+            docs &mdash; then answers in plain language, with the exact page cited.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="mt-9 flex flex-wrap items-center gap-4"
+          >
+            <Show when="signed-out">
+              <SignUpButton mode="redirect">
+                <button className="group inline-flex items-center gap-2 bg-[#ff6a1a] px-6 py-3 text-sm font-medium text-[#0a0a0b] transition-colors hover:bg-[#ff7d36]">
+                  Get started
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </button>
+              </SignUpButton>
+              <SignInButton mode="redirect">
+                <button className="inline-flex items-center gap-2 border border-[#26282e] px-6 py-3 text-sm font-medium text-[#e8e9eb] transition-colors hover:border-[#3a3d45]">
+                  Sign in
+                </button>
+              </SignInButton>
+            </Show>
+            <Show when="signed-in">
+              <Link
+                href="/dashboard"
+                className="group inline-flex items-center gap-2 bg-[#ff6a1a] px-6 py-3 text-sm font-medium text-[#0a0a0b] transition-colors hover:bg-[#ff7d36]"
+              >
+                Go to dashboard
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+              <UserButton />
+            </Show>
+          </motion.div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          className="lg:pt-2"
+        >
+          <HeroLog />
+        </motion.div>
       </div>
 
-      <div>
-        <h3 className="mb-2 font-semibold text-white">{title}</h3>
-        <p className="text-sm leading-relaxed text-[hsl(215_16%_65%)]">{desc}</p>
-      </div>
-    </motion.div>
-  )
-}
-
-// ─── Features section ─────────────────────────────────────────────────────────
-
-function Features() {
-  return (
-    <section className="relative px-6 pb-32 pt-8">
-      {/* Section label */}
       <motion.div
         initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5 }}
-        className="mb-4 text-center text-xs font-semibold uppercase tracking-widest text-[hsl(215_16%_65%)]"
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.6, duration: 0.6 }}
+        className="relative mx-auto mt-16 max-w-6xl"
       >
-        Everything you need
-      </motion.div>
-      <motion.h2
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="mb-14 text-center text-3xl font-bold text-white sm:text-4xl"
-      >
-        Built for industrial operations
-      </motion.h2>
-
-      <div className="mx-auto grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {features.map((f, i) => (
-          <FeatureCard key={f.title} {...f} index={i} />
-        ))}
-      </div>
-
-      {/* Bottom brand mark */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ delay: 0.3, duration: 0.6 }}
-        className="mt-24 flex items-center justify-center gap-2 text-[hsl(215_16%_65%)] text-sm"
-      >
-        <Brain className="h-4 w-4" />
-        <span>UnifiedOps Brain — powered by Groq + Jina AI</span>
+        <Readout />
       </motion.div>
     </section>
   )
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ── alternating capability sections ─────────────────────────────────────────
+
+const CAPS = [
+  {
+    tag: 'CHAT',
+    icon: MessageSquare,
+    title: 'Ask it like a colleague',
+    body: 'Type a question the way you\u2019d ask the engineer next to you. The answer comes back with the document and page it was pulled from \u2014 nothing invented, everything traceable.',
+  },
+  {
+    tag: 'COMPLY',
+    icon: ShieldCheck,
+    title: 'Catch the gap before the audit does',
+    body: 'Run any SOP against a regulation and get a scored, color-coded breakdown of what\u2019s missing \u2014 minutes before an inspector finds it for you.',
+  },
+  {
+    tag: 'TRACE',
+    icon: Search,
+    title: 'Learn from the last breakdown',
+    body: 'Ask what went wrong before. The system pulls the original incident, the fix that worked, and the downtime it cost \u2014 so you\u2019re not solving it twice.',
+  },
+]
+
+function CapabilityRow({ cap, index }: { cap: (typeof CAPS)[number]; index: number }) {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, margin: '-100px' })
+  const Icon = cap.icon
+  const flipped = index % 2 === 1
+
+  return (
+    <div ref={ref} className="border-b border-[#26282e] px-6 py-16 sm:px-10 sm:py-20 lg:px-16">
+      <div
+        className={`mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-2 lg:gap-20 ${
+          flipped ? 'lg:[&>*:first-child]:order-2' : ''
+        }`}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div className="mb-5 inline-flex items-center gap-2 font-mono text-[10px] tracking-[0.18em] text-[#ff6a1a]">
+            <Icon className="h-3.5 w-3.5" />
+            {cap.tag}
+          </div>
+          <h3 className="max-w-sm text-3xl font-medium leading-tight text-[#e8e9eb] sm:text-4xl">
+            {cap.title}
+          </h3>
+          <p className="mt-5 max-w-sm text-[15px] leading-relaxed text-[#a9adb6]">{cap.body}</p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={inView ? { opacity: 1, scale: 1 } : {}}
+          transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+          className="flex aspect-[4/3] items-center justify-center border border-[#26282e] bg-[#0c0d10]"
+        >
+          <Icon className="h-12 w-12 text-[#26282e]" strokeWidth={1} />
+        </motion.div>
+      </div>
+    </div>
+  )
+}
+
+// ── footer ───────────────────────────────────────────────────────────────────
+
+function Footer() {
+  return (
+    <footer className="px-6 py-10 sm:px-10 lg:px-16">
+      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 font-mono text-[11px] tracking-wide text-[#7a7f8a] sm:flex-row">
+        <span>UNIFIEDOPS BRAIN</span>
+        <span>GROQ &middot; JINA AI &middot; SUPABASE</span>
+      </div>
+    </footer>
+  )
+}
+
+// ── page ─────────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
   return (
-    <main
-      className="min-h-screen antialiased"
-      style={{ background: 'hsl(222 47% 6%)' }}
-    >
+    <main className="min-h-screen bg-[#08090b] antialiased">
       <Hero />
-      <Features />
+      {CAPS.map((cap, i) => (
+        <CapabilityRow key={cap.tag} cap={cap} index={i} />
+      ))}
+      <Footer />
     </main>
   )
 }
