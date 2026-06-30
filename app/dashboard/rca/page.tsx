@@ -24,9 +24,9 @@ interface RCAResult {
 }
 
 export default function RCAPage() {
-  const [query, setQuery] = useState('')
+  const [query, setQuery]   = useState('')
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<RCAResult | null>(null)
+  const [result, setResult]   = useState<RCAResult | null>(null)
 
   const runAnalysis = async () => {
     if (!query.trim() || loading) return
@@ -34,10 +34,10 @@ export default function RCAPage() {
     setResult(null)
 
     try {
-      const res = await fetch('/api/rca/analyze', {
-        method: 'POST',
+      const res  = await fetch('/api/rca/analyze', {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query }),
+        body:    JSON.stringify({ query }),
       })
       const data = await res.json()
       if (res.ok) setResult(data.result)
@@ -55,15 +55,25 @@ export default function RCAPage() {
     'Why did equipment fail last time',
   ]
 
+  // ── Card/panel shared style ────────────────────────────────────────────────
+  const glassCard: React.CSSProperties = {
+    background:     'hsl(0 0% 8% / 0.9)',
+    border:         '1px solid hsl(0 0% 16% / 0.7)',
+    backdropFilter: 'blur(12px)',
+  }
+
+  const labelStyle = 'text-xs font-semibold uppercase tracking-widest text-[hsl(0_0%_42%)]'
+
   return (
     <div>
-      <h2 className="text-2xl font-bold text-slate-800 mb-2">Root Cause Analysis</h2>
-      <p className="text-slate-500 mb-8">
+      {/* Page heading */}
+      <h2 className="text-2xl font-bold text-white mb-2">Root Cause Analysis</h2>
+      <p className="text-sm mb-8" style={{ color: 'hsl(0 0% 52%)' }}>
         Purani failures aur unke fixes dhundo apne maintenance records mein.
       </p>
 
       {/* Search Box */}
-      <Card className="p-6 mb-8">
+      <div className="rounded-2xl p-6 mb-8" style={glassCard}>
         <div className="flex gap-3 mb-4">
           <Input
             value={query}
@@ -71,9 +81,13 @@ export default function RCAPage() {
             onKeyDown={e => e.key === 'Enter' && runAnalysis()}
             placeholder="e.g. Pump P-204 kyu kharab hua tha pichle saal?"
             disabled={loading}
-            className="flex-1"
+            className="flex-1 bg-[hsl(0_0%_8%)] border-[hsl(0_0%_20%)] text-white placeholder:text-[hsl(0_0%_35%)] focus-visible:ring-[hsl(0_0%_30%)]"
           />
-          <Button onClick={runAnalysis} disabled={loading || !query.trim()}>
+          <Button
+            onClick={runAnalysis}
+            disabled={loading || !query.trim()}
+            className="bg-[hsl(0_0%_20%)] hover:bg-[hsl(0_0%_26%)] text-white border-none"
+          >
             {loading ? (
               <Loader2 size={16} className="animate-spin" />
             ) : (
@@ -85,96 +99,119 @@ export default function RCAPage() {
         {/* Example queries */}
         {!result && (
           <div className="flex flex-wrap gap-2">
-            <span className="text-xs text-slate-400">Try:</span>
+            <span className="text-xs" style={{ color: 'hsl(0 0% 40%)' }}>Try:</span>
             {exampleQueries.map((q, i) => (
               <button
                 key={i}
                 onClick={() => setQuery(q)}
-                className="text-xs text-blue-600 hover:underline"
+                className="text-xs transition-colors hover:underline"
+                style={{ color: 'hsl(0 0% 60%)' }}
               >
                 {q}{i < exampleQueries.length - 1 ? ' ·' : ''}
               </button>
             ))}
           </div>
         )}
-      </Card>
+      </div>
 
       {/* Results */}
       {result && (
         <div className="flex flex-col gap-6">
-          {/* Summary */}
-          <Card className={`p-6 ${result.found_incidents ? 'bg-blue-50' : 'bg-slate-50'}`}>
+          {/* Summary banner */}
+          <div
+            className="rounded-2xl p-5"
+            style={{
+              background: result.found_incidents
+                ? 'hsl(0 0% 10% / 0.95)'
+                : 'hsl(0 0% 8% / 0.95)',
+              border: `1px solid ${result.found_incidents ? 'hsl(0 0% 22%)' : 'hsl(0 0% 18%)'}`,            }}
+          >
             <div className="flex items-start gap-3">
-              <AlertTriangle size={20} className={result.found_incidents ? 'text-blue-600' : 'text-slate-400'} />
+              <AlertTriangle
+                size={20}
+                className="shrink-0 mt-0.5"
+                style={{ color: result.found_incidents ? 'hsl(25 75% 60%)' : 'hsl(0 0% 48%)' }}
+              />
               <div>
-                <p className="font-semibold text-slate-800 mb-1">
-                  {result.found_incidents ? `${result.incidents.length} Related Incident(s) Found` : 'No Matching History Found'}
+                <p className="font-semibold text-white mb-1">
+                  {result.found_incidents
+                    ? `${result.incidents.length} Related Incident(s) Found`
+                    : 'No Matching History Found'}
                 </p>
-                <p className="text-sm text-slate-600">{result.summary}</p>
+                <p className="text-sm" style={{ color: 'hsl(0 0% 60%)' }}>{result.summary}</p>
               </div>
             </div>
-          </Card>
+          </div>
 
-          {/* Incidents */}
+          {/* Incident cards */}
           {result.incidents.map((incident, i) => (
-            <Card key={i} className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-slate-800">{incident.title}</h3>
-                <Badge variant="secondary">Page {incident.source_page}</Badge>
+            <div key={i} className="rounded-2xl p-6" style={glassCard}>
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="font-semibold text-white">{incident.title}</h3>
+                <Badge
+                  variant="outline"
+                  className="border-[hsl(0_0%_22%)] text-[hsl(0_0%_55%)]"
+                >
+                  Page {incident.source_page}
+                </Badge>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Root cause */}
                 <div className="flex gap-3">
-                  <AlertTriangle size={18} className="text-red-500 shrink-0 mt-0.5" />
+                  <AlertTriangle size={16} className="text-[hsl(0_84%_60%)] shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs font-medium text-slate-400 mb-1">ROOT CAUSE</p>
-                    <p className="text-sm text-slate-700">{incident.root_cause}</p>
+                    <p className={labelStyle + ' mb-1'}>Root Cause</p>
+                    <p className="text-sm text-white/80">{incident.root_cause}</p>
                   </div>
                 </div>
 
+                {/* Resolution */}
                 <div className="flex gap-3">
-                  <Wrench size={18} className="text-blue-500 shrink-0 mt-0.5" />
+                  <Wrench size={16} className="text-[hsl(142_70%_50%)] shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs font-medium text-slate-400 mb-1">RESOLUTION</p>
-                    <p className="text-sm text-slate-700">{incident.resolution}</p>
+                    <p className={labelStyle + ' mb-1'}>Resolution</p>
+                    <p className="text-sm text-white/80">{incident.resolution}</p>
                   </div>
                 </div>
 
+                {/* Outcome */}
                 <div className="flex gap-3">
-                  <TrendingUp size={18} className="text-green-500 shrink-0 mt-0.5" />
+                  <TrendingUp size={16} className="text-[hsl(270_70%_65%)] shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs font-medium text-slate-400 mb-1">OUTCOME</p>
-                    <p className="text-sm text-slate-700">{incident.outcome}</p>
+                    <p className={labelStyle + ' mb-1'}>Outcome</p>
+                    <p className="text-sm text-white/80">{incident.outcome}</p>
                   </div>
                 </div>
 
+                {/* Date */}
                 <div className="flex gap-3">
-                  <Search size={18} className="text-slate-400 shrink-0 mt-0.5" />
+                  <Search size={16} className="shrink-0 mt-0.5" style={{ color: 'hsl(0 0% 45%)' }} />
                   <div>
-                    <p className="text-xs font-medium text-slate-400 mb-1">DATE</p>
-                    <p className="text-sm text-slate-700">{incident.date_mentioned}</p>
+                    <p className={labelStyle + ' mb-1'}>Date</p>
+                    <p className="text-sm text-white/80">{incident.date_mentioned}</p>
                   </div>
                 </div>
               </div>
-            </Card>
+            </div>
           ))}
 
           {/* Recommendations */}
           {result.recommendations.length > 0 && (
-            <Card className="p-6">
+            <div className="rounded-2xl p-6" style={glassCard}>
               <div className="flex items-center gap-2 mb-4">
-                <Lightbulb size={18} className="text-yellow-500" />
-                <h3 className="font-semibold text-slate-800">Recommendations</h3>
+                <Lightbulb size={16} className="text-yellow-400" />
+                <h3 className="font-semibold text-white">Recommendations</h3>
               </div>
-              <ul className="flex flex-col gap-2">
+              <ul className="flex flex-col gap-2.5">
                 {result.recommendations.map((rec, i) => (
-                  <li key={i} className="text-sm text-slate-600 flex gap-2">
-                    <span className="text-blue-500">•</span>
+                  <li key={i} className="text-sm flex gap-2.5" style={{ color: 'hsl(0 0% 68%)' }}>
+                    <span className="text-[hsl(270_70%_65%)] shrink-0">•</span>
                     {rec}
                   </li>
                 ))}
               </ul>
-            </Card>
+            </div>
           )}
         </div>
       )}
