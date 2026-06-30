@@ -8,7 +8,7 @@
 --     column. Re-process your documents after running this.
 -- =============================================================
 
--- Step 1: Drop the existing ivfflat index (must happen before ALTER COLUMN)
+-- Step 1: Drop any existing ANN index (ivfflat or hnsw)
 DROP INDEX IF EXISTS document_chunks_embedding_idx;
 
 -- Step 2: Clear existing chunks — old 384-dim embeddings are incompatible
@@ -19,17 +19,27 @@ ALTER TABLE document_chunks
   ALTER COLUMN embedding TYPE vector(768)
   USING embedding::text::vector(768);
 
--- Step 4: Recreate the ivfflat index for 768 dimensions
---   lists = sqrt(row_count) is a reasonable starting value.
---   Adjust if you have significantly more/fewer rows later.
+-- Step 4: Create an HNSW index instead of ivfflat.
+--
+-- WHY HNSW instead of ivfflat?
+--   ivfflat requires a minimum of (lists × 3) rows at index-build time to
+--   train its cluster centroids. Built on an empty table it has 0 trained
+--   clusters, so ANN queries silently return 0 results even when exact
+--   matches exist. Additionally ivfflat.probes defaults to 1, meaning only
+--   1 cluster out of N is scanned — terrible recall on small datasets.
+--
+--   HNSW builds its graph incrementally as rows are inserted, works
+--   correctly from the very first row, and gives high recall without
+--   requiring probes tuning.
 CREATE INDEX document_chunks_embedding_idx
   ON document_chunks
-  USING ivfflat (embedding vector_cosine_ops)
-  WITH (lists = 100);
+  USING hnsw (embedding vector_cosine_ops)
+  WITH (m = 16, ef_construction = 64);
 
 -- Step 5: Drop and recreate the match_chunks function with vector(768) signature
 DROP FUNCTION IF EXISTS match_chunks(vector, float, int);
 DROP FUNCTION IF EXISTS match_chunks(vector(384), float, int);
+DROP FUNCTION IF EXISTS match_chunks(vector(768), float, int);
 
 CREATE OR REPLACE FUNCTION match_chunks(
   query_embedding  vector(768),
@@ -44,8 +54,14 @@ RETURNS TABLE (
   page_number int,
   similarity  float
 )
-LANGUAGE sql STABLE
+LANGUAGE plpgsql STABLE
 AS $$
+BEGIN
+  -- ef_search controls recall for HNSW queries (higher = better recall,
+  -- slightly slower). 200 is a good balance; default is 40.
+  SET LOCAL hnsw.ef_search = 200;
+
+  RETURN QUERY
   SELECT
     dc.id,
     dc.document_id,
@@ -57,4 +73,5 @@ AS $$
   WHERE 1 - (dc.embedding <=> query_embedding) > match_threshold
   ORDER BY dc.embedding <=> query_embedding
   LIMIT match_count;
+END;
 $$;

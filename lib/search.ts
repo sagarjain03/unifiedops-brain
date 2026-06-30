@@ -17,6 +17,15 @@ export async function searchSimilarChunks(
 ): Promise<SearchResult[]> {
   const embedding = await getEmbedding(query)
 
+  // ── Diagnostic logging — verify embedding before sending to Supabase ─────
+  console.log('[search] embedding type check:', {
+    isArray:   Array.isArray(embedding),
+    length:    Array.isArray(embedding) ? embedding.length : 'N/A',
+    first3:    Array.isArray(embedding) ? embedding.slice(0, 3) : embedding,
+    threshold: matchThreshold,
+    limit,
+  })
+
   // Embedding is already number[] from getEmbedding — no conversion needed
   const { data, error } = await supabaseAdmin.rpc('match_chunks', {
     query_embedding: embedding,
