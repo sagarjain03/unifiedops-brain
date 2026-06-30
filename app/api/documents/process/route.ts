@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/db'
 import { chunkText } from '@/lib/chunker'
 import { getEmbedding } from '@/lib/embeddings'
 import { runOcr } from '@/lib/ocr'
+import { extractEntities, saveEntities } from '@/lib/entities'
 import { extractText } from 'unpdf'
 
 /**
@@ -187,6 +188,42 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: insertError.message }, { status: 500 })
     }
 
+    // ── Step 4: Entity extraction — run after chunks are safely saved ──────────
+    // Fetch the just-inserted chunk rows so we have their database IDs.
+    // We match by document_id + chunk_index (both set during insert above).
+    const { data: savedChunks } = await supabaseAdmin
+      .from('document_chunks')
+      .select('id, chunk_index, content')
+      .eq('document_id', document_id)
+
+    let entitiesExtracted = 0
+
+    if (savedChunks && savedChunks.length > 0) {
+      console.log(`[entities] Starting entity extraction for ${savedChunks.length} chunks`)
+
+      for (const savedChunk of savedChunks) {
+        // Skip very short chunks — unlikely to contain named entities and
+        // wastes Groq API quota.
+        if (!savedChunk.content || savedChunk.content.length < 100) continue
+
+        try {
+          const entities = await extractEntities(savedChunk.content)
+
+          if (entities.length > 0) {
+            await saveEntities(entities, document_id, savedChunk.id, savedChunk.content)
+            entitiesExtracted += entities.length
+            console.log(`[entities] chunk ${savedChunk.chunk_index}: saved ${entities.length} entities`)
+          }
+        } catch (entityErr) {
+          // One chunk failing must NOT abort the whole document — entities are
+          // a best-effort enrichment, not required for search to work.
+          console.warn(`[entities] chunk ${savedChunk.chunk_index} extraction failed (skipped):`, entityErr)
+        }
+      }
+
+      console.log(`[entities] ✅ Entity extraction complete — ${entitiesExtracted} entities saved`)
+    }
+
     // Status update karo — indexed (+ record whether OCR was used)
     await supabaseAdmin
       .from('documents')
@@ -197,6 +234,7 @@ export async function POST(req: NextRequest) {
       success: true,
       chunks_created: chunks.length,
       used_ocr: usedOcr,
+      entities_extracted: entitiesExtracted,
     })
 
   } catch (error) {

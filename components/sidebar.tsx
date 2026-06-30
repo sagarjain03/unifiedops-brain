@@ -9,6 +9,7 @@ import {
   MessageSquare,
   ShieldCheck,
   Search,
+  Network,
 } from 'lucide-react'
 
 const links = [
@@ -16,8 +17,10 @@ const links = [
   { href: '/dashboard/documents', label: 'Documents', icon: FileText },
   { href: '/dashboard/chat', label: 'AI Chat', icon: MessageSquare },
   { href: '/dashboard/rca', label: 'RCA Analysis', icon: Search },
+  { href: '/dashboard/graph', label: 'Knowledge Graph', icon: Network },
   { href: '/dashboard/compliance', label: 'Compliance', icon: ShieldCheck },
 ]
+
 
 export default function Sidebar() {
   const pathname = usePathname()
