@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { motion, AnimatePresence } from 'framer-motion'
 import { ShieldCheck, ShieldX, Shield, Loader2 } from 'lucide-react'
 
 interface Document { id: string; filename: string; status: string }
@@ -21,30 +20,30 @@ const REGULATIONS = [
   'ISO 14001 - Environmental Management',
 ]
 
-const glass: React.CSSProperties = {
-  background:     'hsl(0 0% 8% / 0.9)',
-  border:         '1px solid hsl(0 0% 16% / 0.7)',
-  backdropFilter: 'blur(12px)',
-  borderRadius:   '1rem',
+const STATUS_CONFIG = {
+  compliant:     { icon: ShieldCheck, color: '#4caf6e', label: 'COMPLIANT',           barColor: '#4caf6e' },
+  non_compliant: { icon: ShieldX,    color: '#e5484d', label: 'NON COMPLIANT',        barColor: '#e5484d' },
+  partial:       { icon: Shield,     color: '#ff6a1a', label: 'PARTIALLY COMPLIANT',  barColor: '#ff6a1a' },
 }
 
-const selectStyle: React.CSSProperties = {
-  width:        '100%',
-  background:   'hsl(0 0% 8%)',
-  border:       '1px solid hsl(0 0% 20%)',
-  color:        'hsl(0 0% 90%)',
-  borderRadius: '0.625rem',
-  padding:      '0.625rem 0.75rem',
-  fontSize:     '0.875rem',
-  outline:      'none',
+const SEVERITY_COLOR = {
+  high:   { text: '#e5484d', label: 'HIGH'   },
+  medium: { text: '#ff6a1a', label: 'MEDIUM' },
+  low:    { text: '#7a7f8a', label: 'LOW'    },
 }
+
+const selectCls = [
+  'w-full border border-[#26282e] bg-[#08090b] px-3 py-2.5',
+  'font-mono text-[12px] text-[#e8e9eb] tracking-wide',
+  'focus:border-[#ff6a1a] focus:outline-none',
+].join(' ')
 
 export default function CompliancePage() {
-  const [documents, setDocuments]   = useState<Document[]>([])
+  const [documents, setDocuments]     = useState<Document[]>([])
   const [selectedDoc, setSelectedDoc] = useState('')
   const [selectedReg, setSelectedReg] = useState('')
-  const [loading, setLoading]       = useState(false)
-  const [result, setResult]         = useState<ComplianceResult | null>(null)
+  const [loading, setLoading]         = useState(false)
+  const [result, setResult]           = useState<ComplianceResult | null>(null)
 
   useEffect(() => {
     fetch('/api/documents/list')
@@ -67,128 +66,156 @@ export default function CompliancePage() {
     finally { setLoading(false) }
   }
 
-  const statusConfig = {
-    compliant:     { icon: ShieldCheck, color: 'hsl(142 70% 50%)', bg: 'hsl(142 40% 10%)', border: 'hsl(142 40% 20%)', label: 'Compliant' },
-    non_compliant: { icon: ShieldX,    color: 'hsl(0 84% 60%)',   bg: 'hsl(0 50% 10%)',   border: 'hsl(0 50% 20%)',   label: 'Non Compliant' },
-    partial:       { icon: Shield,     color: 'hsl(25 95% 60%)',  bg: 'hsl(25 60% 10%)',  border: 'hsl(25 60% 20%)',  label: 'Partially Compliant' },
-  }
-
-  const severityBadge = {
-    high:   'bg-[hsl(0_50%_14%)] text-[hsl(0_84%_65%)] border-[hsl(0_50%_22%)]',
-    medium: 'bg-[hsl(25_60%_12%)] text-[hsl(25_95%_62%)] border-[hsl(25_60%_22%)]',
-    low:    'bg-[hsl(0_0%_12%)] text-[hsl(0_0%_55%)] border-[hsl(0_0%_22%)]',
-  }
-
   return (
-    <div>
-      <h2 className="text-2xl font-bold text-white mb-2">Compliance Check</h2>
-      <p className="text-sm mb-8" style={{ color: 'hsl(0 0% 52%)' }}>
-        Document ko kisi bhi regulation ke against check karo.
-      </p>
+    <div className="mx-auto max-w-4xl">
+      {/* Page header */}
+      <div className="mb-8 border-b border-[#26282e] pb-6">
+        <div className="mb-1 font-mono text-[10px] tracking-[0.18em] text-[#7a7f8a]">MODULE · COMPLIANCE</div>
+        <h2 className="text-2xl font-medium text-[#e8e9eb]">Compliance Check</h2>
+        <p className="mt-1 text-sm text-[#7a7f8a]">Document ko kisi bhi regulation ke against check karo.</p>
+      </div>
 
       {/* Controls */}
-      <div className="p-6 mb-8" style={glass}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-          <div>
-            <label className="text-xs font-semibold uppercase tracking-widest mb-2 block" style={{ color: 'hsl(0 0% 42%)' }}>
-              Document Select Karo
-            </label>
-            <select value={selectedDoc} onChange={e => setSelectedDoc(e.target.value)} style={selectStyle}>
+      <div className="mb-8 border border-[#26282e] bg-[#0c0d10]">
+        <div className="grid grid-cols-1 divide-y divide-[#26282e] md:grid-cols-2 md:divide-x md:divide-y-0">
+          <div className="p-5">
+            <div className="mb-2 font-mono text-[9px] tracking-[0.18em] text-[#7a7f8a]">DOCUMENT</div>
+            <select value={selectedDoc} onChange={e => setSelectedDoc(e.target.value)} className={selectCls}>
               <option value="">-- Document choose karo --</option>
               {documents.map(doc => <option key={doc.id} value={doc.id}>{doc.filename}</option>)}
             </select>
             {documents.length === 0 && (
-              <p className="text-xs mt-1" style={{ color: 'hsl(0 84% 60%)' }}>Pehle Documents page pe PDF upload aur process karo</p>
+              <p className="mt-2 font-mono text-[10px] tracking-wider text-[#e5484d]">
+                PEHLE PDF UPLOAD + PROCESS KARO
+              </p>
             )}
           </div>
-          <div>
-            <label className="text-xs font-semibold uppercase tracking-widest mb-2 block" style={{ color: 'hsl(0 0% 42%)' }}>
-              Regulation Select Karo
-            </label>
-            <select value={selectedReg} onChange={e => setSelectedReg(e.target.value)} style={selectStyle}>
+          <div className="p-5">
+            <div className="mb-2 font-mono text-[9px] tracking-[0.18em] text-[#7a7f8a]">REGULATION</div>
+            <select value={selectedReg} onChange={e => setSelectedReg(e.target.value)} className={selectCls}>
               <option value="">-- Regulation choose karo --</option>
               {REGULATIONS.map(reg => <option key={reg} value={reg}>{reg}</option>)}
             </select>
           </div>
         </div>
-        <Button
-          onClick={runCheck}
-          disabled={!selectedDoc || !selectedReg || loading}
-          className="w-full bg-[hsl(0_0%_20%)] hover:bg-[hsl(0_0%_26%)] text-white border-none"
-        >
-          {loading
-            ? <><Loader2 size={16} className="animate-spin mr-2" /> Checking...</>
-            : <><ShieldCheck size={16} className="mr-2" /> Run Compliance Check</>
-          }
-        </Button>
+
+        <div className="border-t border-[#26282e] p-5">
+          <button
+            onClick={runCheck}
+            disabled={!selectedDoc || !selectedReg || loading}
+            className="flex w-full items-center justify-center gap-2 border border-[#26282e] bg-[#08090b] py-3 font-mono text-[11px] tracking-[0.14em] text-[#a9adb6] transition-colors hover:border-[#ff6a1a] hover:text-[#ff6a1a] disabled:opacity-30"
+          >
+            {loading
+              ? <><Loader2 size={13} className="animate-spin" /> CHECKING…</>
+              : <><ShieldCheck size={13} /> RUN COMPLIANCE CHECK</>
+            }
+          </button>
+        </div>
       </div>
 
-      {/* Result */}
-      {result && (() => {
-        const cfg  = statusConfig[result.overall_status]
-        const Icon = cfg.icon
-        return (
-          <div className="flex flex-col gap-6">
-            {/* Score card */}
-            <div className="p-6 rounded-2xl" style={{ background: cfg.bg, border: `1px solid ${cfg.border}`, backdropFilter: 'blur(12px)' }}>
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                  <Icon size={28} style={{ color: cfg.color }} />
-                  <div>
-                    <p className="font-bold text-white">{cfg.label}</p>
-                    <p className="text-sm" style={{ color: 'hsl(0 0% 60%)' }}>{result.summary}</p>
+      {/* Results */}
+      <AnimatePresence>
+        {result && (() => {
+          const sc   = STATUS_CONFIG[result.overall_status]
+          const Icon = sc.icon
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-col gap-4"
+            >
+              {/* Score card */}
+              <div className="border border-[#26282e] bg-[#0c0d10]">
+                {/* Header row */}
+                <div className="flex items-center justify-between border-b border-[#26282e] px-5 py-4">
+                  <div className="flex items-center gap-3">
+                    <Icon size={18} style={{ color: sc.color }} />
+                    <span className="font-mono text-[11px] tracking-[0.14em]" style={{ color: sc.color }}>
+                      {sc.label}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-mono text-3xl font-medium text-[#e8e9eb]">{result.score}</span>
+                    <span className="font-mono text-[11px] text-[#7a7f8a]"> / 100</span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-4xl font-extrabold text-white">{result.score}</p>
-                  <p className="text-xs" style={{ color: 'hsl(0 0% 42%)' }}>/ 100</p>
-                </div>
-              </div>
-              {/* Score bar */}
-              <div className="w-full rounded-full h-2.5" style={{ background: 'hsl(0 0% 16%)' }}>
-                <div
-                  className="h-2.5 rounded-full transition-all"
-                  style={{
-                    width: `${result.score}%`,
-                    background: result.score >= 70 ? 'hsl(142 70% 50%)' : result.score >= 40 ? 'hsl(25 95% 60%)' : 'hsl(0 84% 60%)',
-                  }}
-                />
-              </div>
-            </div>
 
-            {/* Issues */}
-            {result.issues.length > 0 && (
-              <div className="p-6" style={glass}>
-                <h3 className="font-semibold text-white mb-4">Issues Found ({result.issues.length})</h3>
-                <div className="flex flex-col gap-4">
-                  {result.issues.map((issue, i) => (
-                    <div key={i} className="rounded-xl p-4" style={{ background: 'hsl(0 0% 7%)', border: '1px solid hsl(0 0% 16%)' }}>
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="font-medium text-white/90">{issue.title}</p>
-                        <Badge className={severityBadge[issue.severity]}>{issue.severity}</Badge>
-                      </div>
-                      <p className="text-sm mb-2" style={{ color: 'hsl(0 0% 60%)' }}>{issue.description}</p>
-                      <p className="text-sm" style={{ color: 'hsl(142 60% 55%)' }}>💡 {issue.recommendation}</p>
-                    </div>
-                  ))}
+                {/* Score bar */}
+                <div className="px-5 py-4">
+                  <div className="mb-3 h-1 w-full bg-[#26282e]">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${result.score}%` }}
+                      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                      className="h-1"
+                      style={{ background: sc.barColor }}
+                    />
+                  </div>
+                  <p className="text-sm text-[#7a7f8a]">{result.summary}</p>
                 </div>
               </div>
-            )}
 
-            {/* Compliant areas */}
-            {result.compliant_areas.length > 0 && (
-              <div className="p-6" style={glass}>
-                <h3 className="font-semibold text-white mb-4">✅ Compliant Areas</h3>
-                <div className="flex flex-wrap gap-2">
-                  {result.compliant_areas.map((area, i) => (
-                    <Badge key={i} className="bg-[hsl(142_40%_12%)] text-[hsl(142_70%_55%)] border-[hsl(142_40%_22%)]">{area}</Badge>
-                  ))}
+              {/* Issues */}
+              {result.issues.length > 0 && (
+                <div className="border border-[#26282e] bg-[#0c0d10]">
+                  <div className="border-b border-[#26282e] px-5 py-3 font-mono text-[10px] tracking-[0.18em] text-[#7a7f8a]">
+                    ISSUES FOUND ({result.issues.length})
+                  </div>
+                  <ul className="divide-y divide-[#26282e]">
+                    {result.issues.map((issue, i) => {
+                      const sv = SEVERITY_COLOR[issue.severity]
+                      return (
+                        <li key={i} className="px-5 py-4">
+                          <div className="mb-2 flex items-center justify-between gap-3">
+                            <p className="text-sm font-medium text-[#e8e9eb]">{issue.title}</p>
+                            <span className="shrink-0 font-mono text-[9px] tracking-[0.14em]" style={{ color: sv.text }}>
+                              {sv.label}
+                            </span>
+                          </div>
+                          <p className="mb-2 text-sm text-[#7a7f8a]">{issue.description}</p>
+                          <div className="flex items-start gap-2 border-l-2 border-[#ff6a1a]/40 pl-3">
+                            <p className="text-sm text-[#a9adb6]">{issue.recommendation}</p>
+                          </div>
+                        </li>
+                      )
+                    })}
+                  </ul>
                 </div>
-              </div>
-            )}
-          </div>
-        )
-      })()}
+              )}
+
+              {/* Compliant areas */}
+              {result.compliant_areas.length > 0 && (
+                <div className="border border-[#26282e] bg-[#0c0d10]">
+                  <div className="border-b border-[#26282e] px-5 py-3 font-mono text-[10px] tracking-[0.18em] text-[#4caf6e]">
+                    COMPLIANT AREAS
+                  </div>
+                  <div className="flex flex-wrap gap-2 p-5">
+                    {result.compliant_areas.map((area, i) => (
+                      <span
+                        key={i}
+                        className="border border-[#4caf6e]/20 bg-[#4caf6e]/[0.06] px-3 py-1 font-mono text-[10px] tracking-wider text-[#4caf6e]"
+                      >
+                        {area}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )
+        })()}
+      </AnimatePresence>
+
+      {/* Empty state */}
+      {!result && !loading && (
+        <div className="border border-dashed border-[#26282e] py-20 text-center">
+          <Shield size={28} className="mx-auto mb-3 text-[#26282e]" strokeWidth={1} />
+          <p className="font-mono text-[11px] tracking-wider text-[#3a3d45]">
+            SELECT A DOCUMENT AND REGULATION TO BEGIN
+          </p>
+        </div>
+      )}
     </div>
   )
 }
