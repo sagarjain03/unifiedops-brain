@@ -47,6 +47,12 @@ export default function RCAPage() {
     finally { setLoading(false) }
   }
 
+  const exportPDF = () => {
+    if (!result) return
+    const url = `/dashboard/rca/report?data=${encodeURIComponent(JSON.stringify(result))}&query=${encodeURIComponent(query)}`
+    window.open(url, '_blank')
+  }
+
   return (
     <div className="mx-auto max-w-4xl">
       {/* Page header */}
@@ -101,6 +107,16 @@ export default function RCAPage() {
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             className="flex flex-col gap-4"
           >
+            {/* Export button */}
+            <div className="flex justify-end">
+              <button
+                onClick={exportPDF}
+                className="border border-[#26282e] bg-[#0c0d10] px-4 py-2 font-mono text-[10px] tracking-[0.14em] text-[#7a7f8a] transition-colors hover:border-[#ff6a1a] hover:text-[#ff6a1a]"
+              >
+                EXPORT PDF →
+              </button>
+            </div>
+
             {/* Summary banner */}
             <div className={`border px-5 py-4 ${
               result.found_incidents
@@ -195,7 +211,7 @@ export default function RCAPage() {
         )}
       </AnimatePresence>
 
-      {/* Empty state when no result yet */}
+      {/* Empty state */}
       {!result && !loading && (
         <div className="border border-dashed border-[#26282e] py-20 text-center">
           <Search size={28} className="mx-auto mb-3 text-[#26282e]" strokeWidth={1} />

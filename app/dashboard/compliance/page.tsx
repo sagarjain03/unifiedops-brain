@@ -66,6 +66,12 @@ export default function CompliancePage() {
     finally { setLoading(false) }
   }
 
+  const exportPDF = () => {
+    if (!result) return
+    const url = `/dashboard/compliance/report?data=${encodeURIComponent(JSON.stringify(result))}&doc=${encodeURIComponent(documents.find(d => d.id === selectedDoc)?.filename || '')}&reg=${encodeURIComponent(selectedReg)}`
+    window.open(url, '_blank')
+  }
+
   return (
     <div className="mx-auto max-w-4xl">
       {/* Page header */}
@@ -125,9 +131,18 @@ export default function CompliancePage() {
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               className="flex flex-col gap-4"
             >
+              {/* Export button */}
+              <div className="flex justify-end">
+                <button
+                  onClick={exportPDF}
+                  className="border border-[#26282e] bg-[#0c0d10] px-4 py-2 font-mono text-[10px] tracking-[0.14em] text-[#7a7f8a] transition-colors hover:border-[#ff6a1a] hover:text-[#ff6a1a]"
+                >
+                  EXPORT PDF →
+                </button>
+              </div>
+
               {/* Score card */}
               <div className="border border-[#26282e] bg-[#0c0d10]">
-                {/* Header row */}
                 <div className="flex items-center justify-between border-b border-[#26282e] px-5 py-4">
                   <div className="flex items-center gap-3">
                     <Icon size={18} style={{ color: sc.color }} />
@@ -141,7 +156,6 @@ export default function CompliancePage() {
                   </div>
                 </div>
 
-                {/* Score bar */}
                 <div className="px-5 py-4">
                   <div className="mb-3 h-1 w-full bg-[#26282e]">
                     <motion.div
