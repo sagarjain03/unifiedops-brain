@@ -229,18 +229,24 @@ const CAPS = [
   {
     tag: 'CHAT',
     icon: MessageSquare,
+    image: '/chat.png',
+    fit: 'object-contain p-4', // Contain the image and add padding so it doesn't touch the borders
     title: 'Ask it like a colleague',
     body: 'Type a question the way you\u2019d ask the engineer next to you. The answer comes back with the document and page it was pulled from \u2014 nothing invented, everything traceable.',
   },
   {
     tag: 'COMPLY',
     icon: ShieldCheck,
+    image: '/comply.png',
+    fit: 'object-cover',
     title: 'Catch the gap before the audit does',
     body: 'Run any SOP against a regulation and get a scored, color-coded breakdown of what\u2019s missing \u2014 minutes before an inspector finds it for you.',
   },
   {
     tag: 'TRACE',
     icon: Search,
+    image: '/trace.png',
+    fit: 'object-cover',
     title: 'Learn from the last breakdown',
     body: 'Ask what went wrong before. The system pulls the original incident, the fix that worked, and the downtime it cost \u2014 so you\u2019re not solving it twice.',
   },
@@ -278,9 +284,13 @@ function CapabilityRow({ cap, index }: { cap: (typeof CAPS)[number]; index: numb
           initial={{ opacity: 0, scale: 0.97 }}
           animate={inView ? { opacity: 1, scale: 1 } : {}}
           transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-          className="flex aspect-[4/3] items-center justify-center border border-[#26282e] bg-[#0c0d10]"
+          className="flex aspect-[4/3] items-center justify-center border border-[#26282e] bg-[#0c0d10] overflow-hidden"
         >
-          <Icon className="h-12 w-12 text-[#26282e]" strokeWidth={1} />
+          <img
+            src={cap.image}
+            alt={cap.title}
+            className={`w-full h-full opacity-85 hover:opacity-100 hover:scale-[1.02] transition-all duration-500 ease-out ${cap.fit}`}
+          />
         </motion.div>
       </div>
     </div>
